@@ -1,0 +1,8 @@
+{
+  "name": "Poop Counter",
+  "short_name": "Poop",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#FFDE59",
+  "theme_color": "#8B4513"
+}

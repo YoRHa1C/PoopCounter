@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Poop Counter 💩</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { --brown: #8B4513; --yellow: #FFDE59; --white: #FFFFFF; }
+        body { 
+            background-color: var(--yellow); font-family: 'Comfortaa', cursive; 
+            margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+        }
+        .header { text-align: center; padding: 10px; color: var(--brown); font-size: 1.5rem; }
+        
+        .main-stage { display: flex; justify-content: space-around; align-items: flex-start; flex: 1; padding: 20px 10px; }
+        
+        .user-card { 
+            width: 45%; background: rgba(255,255,255,0.5); border-radius: 20px; 
+            padding: 15px 5px; text-align: center; border: 3px solid transparent; transition: 0.3s;
+        }
+        .user-card.active { border-color: var(--brown); background: var(--white); transform: scale(1.05); }
+        
+        .avatar-container { position: relative; width: 80px; height: 80px; margin: 0 auto; }
+        .avatar { width: 100%; height: 100%; border-radius: 50%; border: 4px solid var(--brown); background: white; object-fit: cover; }
+        .edit-badge { position: absolute; bottom: 0; right: 0; background: var(--brown); color: white; font-size: 10px; padding: 2px 5px; border-radius: 10px; }
+        
+        .nickname { margin-top: 10px; color: var(--brown); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .count { font-size: 3.5rem; color: var(--brown); margin: 10px 0; }
+        
+        .log-box { font-size: 0.7rem; height: 80px; overflow-y: auto; color: #555; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 5px; margin-top: 5px; }
+
+        .btn-container { padding-bottom: 40px; text-align: center; }
+        .poop-btn { 
+            width: 100px; height: 100px; border-radius: 50%; border: none;
+            background: #6F4E37; font-size: 3rem; cursor: pointer;
+            box-shadow: 0 8px 0 #3E2723; transition: 0.1s;
+        }
+        .poop-btn:active { transform: translateY(5px); box-shadow: 0 3px 0 #3E2723; }
+        
+        .loading-overlay { 
+            position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8);
+            display: none; justify-content: center; align-items: center; z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+<div id="loading" class="loading-overlay">⌛ Chờ xíu...</div>
+
+<div class="header">POOP COUNTER 💩</div>
+
+<div class="main-stage">
+    <div id="card-android" class="user-card">
+        <div class="avatar-container" onclick="changeAvatar('android')">
+            <img id="img-android" class="avatar" src="https://api.dicebear.com/7.x/adventurer/svg?seed=user1">
+            <span class="edit-badge">Đổi</span>
+        </div>
+        <div id="name-android" class="nickname" onclick="changeName('android')">Người ấy</div>
+        <div class="count" id="count-android">0</div>
+        <div class="log-box" id="log-android">Chưa thấy gì...</div>
+    </div>
+
+    <div id="card-ios" class="user-card">
+        <div class="avatar-container" onclick="changeAvatar('ios')">
+            <img id="img-ios" class="avatar" src="https://api.dicebear.com/7.x/adventurer/svg?seed=user2">
+            <span class="edit-badge">Đổi</span>
+        </div>
+        <div id="name-ios" class="nickname" onclick="changeName('ios')">Người ấy</div>
+        <div class="count" id="count-ios">0</div>
+        <div class="log-box" id="log-ios">Chưa thấy gì...</div>
+    </div>
+</div>
+
+<div class="btn-container">
+    <button class="poop-btn" onclick="submitPoop()">💩</button>
+    <p style="color:var(--brown); font-size: 0.8rem;">Bấm vào 💩 để "đi"</p>
+</div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz5Cv_EdjfRj9-BfXe80Inq9DyT2rGPw2_Oz4QDICDt-TWGzOp8-gnQkxWq2nmz8X1t/exec";
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const myRole = isIOS ? 'ios' : 'android';
+
+    // Highlight bên của người dùng hiện tại
+    document.getElementById(`card-${myRole}`).classList.add('active');
+
+    async function fetchData() {
+        document.getElementById('loading').style.display = 'flex';
+        try {
+            const response = await fetch(SCRIPT_URL);
+            const data = await response.json();
+            processLogs(data);
+        } catch (e) { console.error(e); }
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    function processLogs(rows) {
+        let counts = { android: 0, ios: 0 };
+        let logs = { android: [], ios: [] };
+        let nicknames = { android: "Anh", ios: "Em" };
+        let avatars = { android: "user1", ios: "user2" };
+
+        rows.forEach((row, index) => {
+            if (index === 0) return; // Bỏ qua tiêu đề
+            const [user, action, value, nick, ava, time] = row;
+            
+            if (action === 'poop') {
+                counts[user]++;
+                const t = new Date(time);
+                logs[user].unshift(`${t.getHours()}:${t.getMinutes().toString().padStart(2,'0')} 💩`);
+            }
+            if (nick) nicknames[user] = nick;
+            if (ava) avatars[user] = ava;
+        });
+
+        // Cập nhật UI
+        ['android', 'ios'].forEach(r => {
+            document.getElementById(`count-${r}`).innerText = counts[r];
+            document.getElementById(`name-${r}`).innerText = nicknames[r];
+            document.getElementById(`img-${r}`).src = `https://api.dicebear.com/7.x/adventurer/svg?seed=${avatars[r]}`;
+            document.getElementById(`log-${r}`).innerHTML = logs[r].join('<br>');
+        });
+    }
+
+    async function sendRequest(data) {
+        document.getElementById('loading').style.display = 'flex';
+        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) });
+        fetchData();
+    }
+
+    function submitPoop() {
+        sendRequest({ user: myRole, action: 'poop', value: 1 });
+    }
+
+    function changeName(role) {
+        if (role !== myRole) return;
+        const n = prompt("Tên mới của bạn là gì?");
+        if (n) sendRequest({ user: myRole, action: 'change_name', value: 0, nickname: n });
+    }
+
+    function changeAvatar(role) {
+        if (role !== myRole) return;
+        const seed = Math.floor(Math.random() * 1000);
+        sendRequest({ user: myRole, action: 'change_avatar', value: 0, avatar: seed });
+    }
+
+    fetchData(); // Load lần đầu
+</script>
+</body>
+</html>
